@@ -1,0 +1,50 @@
+version: "3.7"
+
+networks:
+  api-gateway: null
+services:
+  postgres:
+    image: postgres:13
+    restart: always
+    networks:
+      - api-gateway
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=postgres
+  bootstrap:
+    platform: linux/arm64/v8
+    image: kong:3.2.2
+    restart: on-failure
+    networks:
+      - api-gateway
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=postgres
+      - KONG_PG_DATABASE=postgres
+      - KONG_PG_USER=postgres
+      - KONG_PG_PASSWORD=postgres
+    command: kong migrations bootstrap
+    depends_on:
+      - postgres
+  core:
+    image: kong:3.2.2
+    restart: always
+    networks:
+      - api-gateway
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=postgres
+      - KONG_PG_DATABASE=postgres
+      - KONG_PG_USER=postgres
+      - KONG_PG_PASSWORD=postgres
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+    ports:
+      - 8001:8001
+      - 8002:8002
+    depends_on:
+      - postgres
